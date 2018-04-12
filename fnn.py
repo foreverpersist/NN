@@ -28,14 +28,16 @@ class FNN:
 
     # Backward-progation
     def backward(self, delta_loss):
+    	# print "delta_loss:", delta_loss
         batchDz = self.output.backward(delta_loss)
-        
+        # print "batchDz:", batchDz
         last_layer = self.output
         layer_size = len(self.layers)
         for k in range(layer_size):
             i = layer_size - 1 - k
             layer = self.layers[i]
             batchDz = layer.backward(batchDz, last_layer.w)
+            # print "batchDz:", batchDz
             last_layer = layer
 
     def update(self, lr=0.005):
@@ -56,7 +58,7 @@ class FNN:
 
     def compile(self, loss='mse', optimizer='sgd'):
         self.loss = losses[loss]
-        self.optimizer = optimizers[optimizer]
+        self.optimizer = optimizer
 
 
     def fit(self, trainX, trainY, \
@@ -66,12 +68,13 @@ class FNN:
         # self.trainY = trainY
 
         # Init layers' params
+        sgd = SGD()
         self.dim = len(trainX[0])
         input_dim = self.dim
         for layer in self.layers:
-            layer.init_params(input_dim)
+            layer.init_params(sgd, input_dim)
             input_dim = layer.dim
-        self.output.init_params(input_dim)
+        self.output.init_params(sgd, input_dim)
 
         # Start train
         size = len(trainX)
@@ -99,9 +102,12 @@ class FNN:
                 self.forward(batchX)
                 # Backward progation
                 loss = self.loss.loss(self.batchA, batchY)
-                if verbose < 3:
-                    print "[loss: ", loss, "]"
                 delta_loss = self.loss.delta(self.batchA, batchY)
+                if verbose < 3:
+                    # print "batchX:", batchX
+                    # print "predY:", self.batchA
+                    # print "batchY:", batchY
+                    print "[loss: ", loss, "]"
                 self.backward(delta_loss)
                 # Update
                 self.update(lr)

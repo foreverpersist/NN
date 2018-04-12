@@ -17,8 +17,9 @@ class LstmLayer(Layer):
         So, there are dim (i, f, o, g) gates, and each 
         gate has (u,w,b) properties 
     '''
-    def __init__(self, dim=1):
+    def __init__(self, dim=1, sgd=sgd):
         self.dim = dim
+        self.sgd = sgd
         # All following properties are arrays whose length is dim
         # i gates
         self.ui = np.random.uniform(-np.sqrt(1. / dim), np.sqrt(1. / dim), dim)
@@ -48,8 +49,8 @@ class LstmLayer(Layer):
         self.gactivation = tanh
         self.activation = tanh
 
-    def init_params(self, input_dim=1):
-        super(LstmLayer, self).init_params(input_dim)
+    def init_params(self, optimizer=sgd, input_dim=1):
+        super(LstmLayer, self).init_params(optimizer, input_dim)
 
     ''' Forward progation
         batchX is a batch_size * input_dim matrix
@@ -204,26 +205,26 @@ class LstmLayer(Layer):
         m = len(self.batchDz)
         for i in range(m):
             # Upate self.ui, self.wi, self.bi
-            self.ui -= lr / m * self.batchDzi[i] * self.batchZ[i]
-            self.wi -= lr / m * self.batchDzi[i] * self.batchh_1[i]
-            self.bi -= lr / m * self.batchDzi[i]
+            self.ui -= lr / m * self.optimizer.update(self.batchDzi[i] * self.batchZ[i])
+            self.wi -= lr / m * self.optimizer.update(self.batchDzi[i] * self.batchh_1[i])
+            self.bi -= lr / m * self.optimizer.update(self.batchDzi[i])
             # Upate self.uf, self.wf, self.bf
-            self.uf -= lr / m * self.batchDzf[i] * self.batchZ[i]
-            self.wf -= lr / m * self.batchDzf[i] * self.batchh_1[i]
-            self.bf -= lr / m * self.batchDzf[i]
+            self.uf -= lr / m * self.optimizer.update(self.batchDzf[i] * self.batchZ[i])
+            self.wf -= lr / m * self.optimizer.update(self.batchDzf[i] * self.batchh_1[i])
+            self.bf -= lr / m * self.optimizer.update(self.batchDzf[i])
             # Upate self.uo, self.wo, self.bo
-            self.uo -= lr / m * self.batchDzo[i] * self.batchZ[i]
-            self.wo -= lr / m * self.batchDzo[i] * self.batchh_1[i]
-            self.bo -= lr / m * self.batchDzo[i]
+            self.uo -= lr / m * self.optimizer.update(self.batchDzo[i] * self.batchZ[i])
+            self.wo -= lr / m * self.optimizer.update(self.batchDzo[i] * self.batchh_1[i])
+            self.bo -= lr / m * self.optimizer.update(self.batchDzo[i])
             # Upate self.ug, self.wg, self.bg
-            self.ug -= lr / m * self.batchDzg[i] * self.batchZ[i]
-            self.wg -= lr / m * self.batchDzg[i] * self.batchh_1[i]
-            self.bo -= lr / m * self.batchDzg[i]
+            self.ug -= lr / m * self.optimizer.update(self.batchDzg[i] * self.batchZ[i])
+            self.wg -= lr / m * self.optimizer.update(self.batchDzg[i] * self.batchh_1[i])
+            self.bo -= lr / m * self.optimizer.update(self.batchDzg[i])
 
             # Upate self.w
             dz = np.array([self.batchDz[i]])
             x = np.array([self.batchX[i]])
-            self.w -= lr / m * np.dot(dz.T, x)
+            self.w -= lr / m * self.optimizer.update(np.dot(dz.T, x))
      #    print "VVV"
      #    print "i:", self.ui, self.wi, self.bi
     	# print "f:", self.uf, self.wf, self.bf
