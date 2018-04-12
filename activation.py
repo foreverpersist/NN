@@ -1,5 +1,5 @@
 import numpy as np
-
+import types
 ''' Activation Functions
     Input: batchX, maybe is
                             a elemen, such as a float or a int
@@ -13,7 +13,7 @@ class Sigmoid:
         return 1.0 / (1.0 + np.exp(-batchX))
 
     def derivative(self, batchX, batchY=None):
-    	if batchY == None:
+    	if isinstace(batchY, types.NoneType):
     		batchY = self.primitive(batchX)
         return (1.0 - batchY) * batchY
 
@@ -23,7 +23,7 @@ class Tanh:
         return np.tanh(batchX)
 
     def derivative(self, batchX, batchY=None):
-    	if batchY == None:
+    	if isinstace(batchY, types.NoneType):
     		batchY = self.primitive(batchX)
         return (1.0 - np.square(batchY))
 

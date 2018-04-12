@@ -1,5 +1,6 @@
 from activation import *
 import numpy as np
+import types
 
 class Layer(object):
 
@@ -38,7 +39,7 @@ class Layer(object):
         batchDz is a batch_size * dim matrix
     '''
     def backward(self, next_batchDz, next_w=None):
-        if next_w == None:
+        if isinstance(next_w, types.NoneType):
             batchDa = next_batchDz
         else:
             batchDa = np.dot(next_batchDz, next_w)
