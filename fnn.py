@@ -65,7 +65,6 @@ class FNN:
         lr=0.005, batch_size=1, epochs=30, shuffle=False, verbose=2):
         assert(len(trainX) == len(trainY))
 
-
         # Start train
         size = len(trainX)
         batchs = size / batch_size
