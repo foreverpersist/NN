@@ -7,135 +7,280 @@ from copy import deepcopy
 class SGD:
 
     ''' Stochastic Gradient Descent:
-            g[t] = J'(theta[t-1])
-            theta[t] = theta[t-1] - eta * g[t]
+            g[t] = ∇[θ[t−1]]f(θ[t−1])
+            θ[t] = θ[t-1] - η * g[t]
     '''
     def update(self, g):
         return g
 
-class Momentum:
+class Momentum(SGD):
 
     ''' Momentum:
-            g[t] = J'(theta[t-1])
-            v[t] = gamma * v[t-1] + eta * g[t]
-            theta[t] = theta[t-1] - v[t]
+            g[t] =  ∇[θ[t−1]]f(θ[t−1])
+            m[t] = µ * m[t-1] + g[t]
+            θ[t] = θ[t-1] - η * m[t]
+        Super parameters:
+            m: an array or a matrix
+            µ: a value, recommended value is ?
     '''
-    def update(self, theta, g, eta, others=(0.005, 0.005)):
-        (v,gamma) = others
-        v = gamma * v + eta * g
-        return theta - v
+    def __init__(self, mu=0.09):
+    	self.m = None
+    	self.mu = mu
 
-class NAG:
+    def update(self, g):
+        if self.m is None:
+        	# Use 1.0 is for copy and format
+        	self.m = 1.0 * g
+        else:
+        	self.m = self.mu * self.m + g
+        
+        delta = self.m
+
+        return delta
+
+class NAG(SGD):
 
     ''' Nesterov Accelerated Gradient:
             It is so different !
-            g[t] = J'(theta[t-1] - gamma * v[t-1])
-            v[t] = gamma * v[t-1] + eta * g[t]
-            theta[t] = theta[t-1] - v[t]
+            g[t] =  ∇[θ[t−1]]f(θ[t−1] - η * µ * m[t-1])
+            m[t] = µ * m[t-1] + g[t]
+            θ[t] = θ[t-1] - η * m[t]
+            Transfer:
+                g[t] = ∇[θ[t−1]]f(θ[t−1])
+                m[t] =  µ * m[t-1] + g[t] + µ * (g[t] - g[t-1])
+                θ[t] = θ[t-1] - η * m[t]
+            Super parameters:
+                g_1: the last g
+                m: an array or a matrix
+                µ: a value, recommended value is ?
     '''
-    def update(self, theta, g, eta, v, gamma):
-        # gt = ?
-        v = gamma * v + eta * g
-        return theta - v
+    def __init__(self, mu=0.09):
+    	self.g_1 = None
+    	self.m = None
+    	self.mu = mu
 
-class AdaGrad:
+    def update(self, g):
+    	if self.g_1 is None:
+    		self.g_1 = np.zeros_like(g)
+    	if self.m is None:
+        	self.m = g + self.mu * (g - self.g_1)
+        else:
+        	self.m = self.mu * self.m + g + self.mu * (g - self.g_1)
+        
+        delta = self.m
+
+        return delta
+
+class AdaGrad(SGD):
 
     ''' Adapative Gradient:
-            g[t] = J'(theta[t-1])
-            The `*` represents Hadamard Production here !
-            G[t] = G[t] + g[t] * g[t]
-            The `*` represents Hadamard Production here !
-            theta[t] = theta[t-1] - eta / sqrt(G[t] + epsilon) * g[t]
+            g[t] = ∇[θ[t−1]]f(θ[t−1])
+            n[t] = n[t-1] + g[t]^2
+            θ[t] = θ[t-1] - η * g[t] / sqrt(n[t] + ε)
+        Super parameters:
+            n: an array or a matrix
+            ε: a value, recommended value is ?
     '''
-    def update(self, theta, g, eta, v, gamma):
-        pass
+    def __init__(self, epsilon=0.001):
+    	self.n = None
+    	self.epsilon = epsilon
 
-class RMSProp:
+    def update(self, g):
+        if self.n is None:
+        	self.n = g * g
+        else:
+        	self.n = self.n + g * g
+
+        delta = self.g / np.sqrt(self.n + self.epsilon)
+        delta = np.nan_to_num(delta)
+
+        return delta
+
+class RMSProp(SGD):
 
     ''' RMSProp:
-            g[t] = J'(theta[t-1])
-            The last `*` represents Hadamard Production here !
-            G[t] = gamma * G[t] + (1-gamma) * g[t] * g[t]
-            The `*` represents Hadamard Production here !
-            theta[t] = theta[t-1] - eta / sqrt(G[t]+epsilon) * g[t]
-    '''
-    def update(self):
-        pass
-
-class AdaDelta:
-
-    ''' AdaDelta:
-            g[t] = J'(theta[t-1])
-            The last `*` represents Hadamard Production here !
-            G[t] = gamma * G[t] + (1 - gamma) * g[t] * g[t]
-            The `*` represents Hadamard Production here !
-            Dtheta[t] = - sqrt(delta[t-1] + epsilon)/sqrt(G[t] + epsilon) * g[t] 
-            theta[t] = theta[t-1] + Dtheta[t]
-            The last `*` represents Hadamard Production here !
-            delta[t] = gamma * delta[t-1] + (1 - gamma) * Dtheta[t] * Detheta[t]
-    '''
-    def update(self):
-        pass
-
-class Adam:
-<<<<<<< Updated upstream:optimizer.py
-    ''' Adam:
-            g[t] = J'(theta[t-1])
-            m[t] = u * m[t-1] + (1-u) * g[t]
+            g[t] = ∇[θ[t−1]]f(θ[t−1])
             n[t] = v * n[t-1] + (1-v) * g[t]^2
-            m~[t] = m[t] / (1-u^t)
-            n~[t] = n[t] / (1-v^t)
-            theta -= eta * m~[t] / (n~[t] + epsilon)
-            The last `*` represents Hadamard Production here !
-            m[t] = beta1 * m[t-1] + (1-beta1) * g[t]
-            The last `*` represents Hadamard Production here !
-            G[t] = gamma * G[t] + (1-gamma) * g[t] * g[t]
-            alpha = eta * sqrt(1-gamma^t) / (1-beta^t)
-            theta[t] = theta[t-1] - alpha * m[t] / sqrt(G[t] + epsilon) 
+            θ[t] = θ[t-1] - η * g[t] / sqrt(n[t] + ε)
+        Super parameters:
+            n: an array or a matrix
+            v: a valuem, v is a constant value 0.5?
+            ε: a value, recommended value is ?
     '''
-    def update(self, theta, g, eta, others):
-        pass
-=======
+    def __init__(self, v=0.5, epsilon=0.001):
+    	self.n = None
+    	self.v = v
+    	self.epsilon = epsilon
+
+    def update(self, g):
+        if self.n is None:
+        	self.n = (1 - self.v) * g * g
+        else:
+        	self.n = self.v * self.n + (1 - self.v) * g * g
+
+        delta = self.g / np.sqrt(self.n + self.epsilon)
+        delta = np.nan_to_num(delta)
+
+        return delta
+
+class AdaDelta(SGD):
+
+    ''' Adapative Delta:
+            g[t] = ∇[θ[t−1]]f(θ[t−1])
+            n[t] = v * n[t-1] + (1-v) * g[t]^2
+            θ[t] = θ[t-1] - η * g[t] / sqrt(n[t] + ε)
+        Super parameters:
+            n: an array or a matrix
+            v: a valuem, recommended value is 
+            ε: a value, recommended value is ?
+    '''
+    def __init__(self, v=0.1, epsilon=0.001):
+    	self.n = None
+    	self.v = v
+    	self.epsilon = epsilon
+
+    def update(self, g):
+        if self.n is None:
+        	self.n = (1 - self.v) * g * g
+        else:
+        	self.n = self.v * self.n + (1 - self.v) * g * g
+
+        delta = self.g / np.sqrt(self.n + self.epsilon)
+        delta = np.nan_to_num(delta)
+
+        return delta
+
+class Adam(SGD):
+
 	''' Adam:
-	        g[t] = J'(theta[t-1])
-	        The last `*` represents Hadamard Production here !
-	        m[t] = beta1 * m[t-1] + (1-beta1) * g[t]
-	        The last `*` represents Hadamard Production here !
-	        G[t] = gamma * G[t] + (1-gamma) * g[t] * g[t]
-	        alpha = eta * sqrt(1-gamma^t) / (1-beta^t)
-	        theta[t] = theta[t-1] - alpha * m[t] / sqrt(G[t] + epsilon) 
+	        g[t] = ∇[θ[t−1]]f(θ[t−1])
+	        m[t] = µ * m[t-1] + (1-µ) * g[t]
+	        ^m[t] = m[t] / (1-µ^t)
+	        n[t] = v * n[t-1] + (1-v) * g[t]^2
+	        ^n[t] = n[t] / (1-v^t)
+	        θ[t] = θ[t-1] - η * ^m[t] / sqrt(^n[t] + ε) 
+	    Super parameters:
+	        m: an array or a matrix
+	        n: an array or a matrix
+	        µ: a value, recommended value is ?
+	        v: a value, recommended value is ?
+	        ε: a value, recommended value is ?
 	'''
-	def __init__(self, beta1, beta2, epsilon):
+	def __init__(self, mu, v, epsilon):
 		self.m = None
-		self.v = None
-		self.beta1_t = 1
-		self.beta2_t = 1
-		self.beta1 = beta1
-		self.beta2 = beta2
+		self.n = None
+		self.mu = mu
+		self.v = v
 		self.epsilon = epsilon
+		self.mut = 1
+		self.vt = 1
 	
 	def update(self, g):
-		print "g", g
-
-		self.beta1_t = self.beta1_t * self.beta1
-		self.beta2_t = self.beta2_t * self.beta2
-
-		if self.m == None:
-			self.m = (1-self.beta1) * g
-			self.v = (1-self.beta2) * g
+		if self.m is None:
+			self.m = (1 - self.mu) * g
+			self.n = (1 - self.v) * g
 		else:
-			self.m = self.beta1 * self.m + (1-self.beta1) * g
-			self.v = self.beta2 * self.v + (1-self.beta2) * g
+			self.m = self.mu * self.m + (1 - self.mu) * g
+			self.v = self.v * self.n + (1 - self.v) * g * g
 
-		print "m: ", self.m
-		print "v: ", self.v
-		m_t = self.m / (1-self.beta1_t)
-		v_t = self.v / (1-self.beta2_t)
+		self.mut *= self.m 
+		self.vt *= self.v 
 
-		delta_theta = m_t / (np.power(v_t, 0.5) + self.epsilon)
-		delta_theta = np.nan_to_num(delta_theta)
-		print "delta_theta: ", delta_theta
-		return delta_theta
+		_m = self.m / (1 - self.mut)
+		_n = self.n / (1 - self.vt)
+
+		delta = _m / (np.sqrt(_n) + self.epsilon)
+		delta = np.nan_to_num(delta)
+
+		return delta
+
+class NAGR(SGD):
+
+	''' NAGR:
+	        g[t] = ∇[θ[t−1]]f(θ[t−1])
+	        m[t] = µs[t] * m[t-1] + g[t]
+	        ^m[t] = g[t] +  µs[t+1] * m[t]
+	        θ[t] = θ[t-1] - η * ^m[t]
+	    Super parameters:
+	        m: an array or a matrix
+	        µs: an array generated for µ
+	        µ: a value, recommended value is ?
+	'''
+	def __init__(self, mu=0.99):
+		self.m = None
+		self.mu = mu
+		self.e = np.pow(0.96, 1.0/250)
+		self.et = 0.5
+		self.mu_t =  mu * 0.5
+
+	def update(self, g):
+		self.et *= self.e
+		self.mu_t = self.mu * (1 - self.et)
+		if self.m is None:
+			self.m = 1.0 * g
+		else:
+			self.m = self.mu_t * self.m + g
+
+		mu_t_next = self.mu * (1 - self.et * self.e)
+		_m = g + mut_next * self.m
+
+		delta = _m
+
+		return delta
+
+
+class Nadam:
+
+	''' Nadam:
+	        g[t] = ∇[θ[t−1]]f(θ[t−1])
+	        ^g = g[t] / (1 - Mul(i=1->t)µs[i])
+	        m[t] = µ * m[t-1] + (1-µ) * g[t]
+	        ^m[t] = m[t] / (1 - Mul(i=1->t+1)µs[i])
+	        n[t] = v * n[t-1] + (1-v) * g[t]^2
+	        ^n[t] = n[t] / (1 - v^t)
+	        _m[t] = (1 - µs[t]) * ^g[t] + µs[t+1] * ^m[t]
+	        θ[t] = θ[t-1] - η * _m[t] / sqrt(^n[t] + ε)
+	    Super parameters:
+	        m: an array or a matrix
+	        n: an array or a matrix
+	        µ: a value, recommended value is 0.99?
+	        µs: an array generated from µ
+	        v: a value, recommended value is 0.999?
+	        ε: a value, recommended value is 1e-8?
+	'''
+	def __init__(self, mu=0.99, v=0.999, epsilon=1e-8):
+		self.m = None
+		self.n = None
+		self.mu = mu
+		self.e = np.pow(0.96, 1.0/250)
+		self.et = 0.5
+		self.mu_t = mu * 0.5
+		self.mum_t = 1
+		self.v = v
+		self.vt = 1
+		self.epsilon = epsilon
+
+	def update(self, g):
+		self.et *= self.e
+		self.mu_t = self.mu * (1 - self.et)
+		self.mum_t *= self.mu_t
+		
+		_g = g / (1 - self.mum_t)
+		self.m = self.mu * m + (1 - self.mu) * g
+		
+		mu_t_next = self.mu * (1 - self.et * self.e)
+		mum_t_next = self.mum_t * mu_t_next
+		_m = m / ((1 - mum_t_next))
+		
+		self.vt *= self.v
+		n = self.n / (1 - self.vt)
+		__m = (1 - self.mu_t) * _g + mu_t_next * _m
+
+		delta = __m / np.sqrt(_n + epsilon)
+		delta = np.nan_to_num(delta)
+
+		return delta
+
 
 sgd = SGD()
 momentum = Momentum()
@@ -143,13 +288,8 @@ nag = NAG()
 adagrad = AdaGrad()
 rmsprop = RMSProp()
 adadelta = AdaDelta()
-# adam = Adam(0.9, 0.999, 10e-8, 0.1, 3)
-# result = adam.update([1, 1, 1])
-# print(adam.beta1_t)
-# print(adam.beta2_t)
-# print(result)
-# result = adam.update([1, 2, 3])
-# print(adam.beta1_t)
-# print(adam.beta2_t)
-# print(result)
->>>>>>> Stashed changes:sgd.py
+adam = Adam()
+nagr = NAGR()
+nadam = Nadam()
+
+
