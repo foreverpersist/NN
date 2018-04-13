@@ -93,11 +93,3 @@ class Adam:
     '''
     def update(self, theta, g, eta, others):
         pass
-
-sgd = SGD()
-momentum = Momentum()
-nag = NAG()
-adagrad = AdaGrad()
-rmsprop = RMSProp()
-adadelta = AdaDelta()
-adam = Adam()
