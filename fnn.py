@@ -1,17 +1,18 @@
 from loss import *
-from sgd import *
+from optimizer import *
 import numpy as np
 
 losses = {'mse': mse, 'ce': ce}
 
-optimizers = {'sgd': sgd, "momentum": momentum}
+sgd = SGD()
 
 class FNN:
     ''' Full-connection Neural Network
         It is a simple network with multiple layers
     '''
-    def __init__(self):
+    def __init__(self, input_dim=1):
         self.layers = []
+        self.input_dim = input_dim
 
     ''' Forward-progation
         batchX is a batch_size * M matrix
@@ -22,18 +23,16 @@ class FNN:
         for layer in self.layers:
             batchA = layer.forward(batchA)
 
-        self.batchA = self.output.forward(batchA)
+        self.batchA = batchA
 
         return self.batchA
 
     # Backward-progation
     def backward(self, delta_loss):
-    	# print "delta_loss:", delta_loss
-        batchDz = self.output.backward(delta_loss)
-        # print "batchDz:", batchDz
-        last_layer = self.output
         layer_size = len(self.layers)
-        for k in range(layer_size):
+        batchDz = self.layers[layer_size - 1].backward(delta_loss)
+        last_layer = self.layers[layer_size - 1]
+        for k in range(1, layer_size):
             i = layer_size - 1 - k
             layer = self.layers[i]
             batchDz = layer.backward(batchDz, last_layer.w)
@@ -41,40 +40,31 @@ class FNN:
             last_layer = layer
 
     def update(self, lr=0.005):
-        self.output.update(lr)
         layer_size = len(self.layers)
         for k in range(layer_size):
             i = layer_size - 1 - k
             layer = self.layers[i]
             layer.update(lr)
 
-    # Add a hidden layer
+    # Add a hidden layer or output layer
     def add(self, layer):
         self.layers.append(layer)
 
-    # Set output layer
-    def output(self, layer):
-        self.output = layer
 
     def compile(self, loss='mse', optimizer='sgd'):
         self.loss = losses[loss]
         self.optimizer = optimizer
+        # Init layers' params
+        input_dim = self.input_dim
+        for layer in self.layers:
+        	layer.init_params(optimizer=sgd, input_dim=input_dim)
+        	input_dim = layer.dim
 
 
     def fit(self, trainX, trainY, \
         lr=0.005, batch_size=1, epochs=30, shuffle=False, verbose=2):
         assert(len(trainX) == len(trainY))
-        # self.trainX = trainX
-        # self.trainY = trainY
 
-        # Init layers' params
-        sgd = SGD()
-        self.dim = len(trainX[0])
-        input_dim = self.dim
-        for layer in self.layers:
-            layer.init_params(sgd, input_dim)
-            input_dim = layer.dim
-        self.output.init_params(sgd, input_dim)
 
         # Start train
         size = len(trainX)
@@ -85,11 +75,10 @@ class FNN:
         batch_pool = None
         if epochs > 1:
             batch_pool = []
-        for i in range(epochs):
-            
+        for i in range(epochs):  
             for j in range(batchs):
                 # Select a batch of samples
-                if batch_pool == None or i == 0:
+                if batch_pool is None or i == 0:
                     start = j * batch_size
                     batchX = np.array(trainX[start:start + batch_size])
                     batchY = np.array(trainY[start:start + batch_size])
