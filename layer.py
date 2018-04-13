@@ -2,6 +2,7 @@ from activation import *
 import numpy as np
 import types
 from optimizer import SGD
+import copy
 
 sgd = SGD()
 
@@ -17,6 +18,8 @@ class Layer(object):
     '''
     def init_params(self, optimizer=sgd, input_dim=1):
     	self.optimizer = optimizer
+    	self.w_optimizer = optimizer
+    	self.b_optimizer = copy.deepcopy(optimizer)
         self.w = np.random.uniform(-np.sqrt(1. / self.dim), np.sqrt(1. / self.dim), (self.dim, input_dim))
         self.b = np.random.uniform(-np.sqrt(1. / self.dim), np.sqrt(1. / self.dim), self.dim)
 
@@ -64,8 +67,8 @@ class Layer(object):
         for i in range(len(self.batchDz)):
             dz = np.array([self.batchDz[i]])
             x = np.array([self.batchX[i]])
-            self.w -= lr / m * self.optimizer.update(np.dot(dz.T, x))
-            self.b -= lr / m * self.optimizer.update(self.batchDz[i])
+            self.w -= lr / m * self.w_optimizer.update(np.dot(dz.T, x))
+            self.b -= lr / m * self.b_optimizer.update(self.batchDz[i])
         # print "VVV"
         # print "w:", self.w
         # print "b:", self.b
