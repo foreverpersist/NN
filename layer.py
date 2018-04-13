@@ -1,7 +1,7 @@
 from activation import *
 import numpy as np
 import types
-from sgd import SGD
+from optimizer import SGD
 
 sgd = SGD()
 
@@ -43,7 +43,7 @@ class Layer(object):
         batchDz is a batch_size * dim matrix
     '''
     def backward(self, next_batchDz, next_w=None):
-        if isinstance(next_w, types.NoneType):
+        if next_w is None:
             batchDa = next_batchDz
         else:
             batchDa = np.dot(next_batchDz, next_w)

@@ -1,7 +1,6 @@
 from activation import *
 from layer import *
 import numpy as np
-import types
 
 class LstmLayer(Layer):
     ''' LSTM Layer, which is consist of dim LSTM cells.
@@ -142,7 +141,7 @@ class LstmLayer(Layer):
         batchDz is a batch_size * dim matrix
     '''
     def backward(self, next_batchDz, next_w=None):
-        if isinstance(next_w, types.NoneType):
+        if next_w is None:
             batchDa = next_batchDz
         else:
             batchDa = np.dot(next_batchDz, next_w)
